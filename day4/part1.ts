@@ -1,92 +1,71 @@
-import { createReadStream, readFileSync } from "fs";
-import * as readline from "readline";
-
-type Position = { key: string; drawn: boolean };
-type Hit = { [key: number]: Mark };
-type Mark = { [key: number]: number };
+import { readFileSync } from "fs";
 
 const main = async () => {
   const data = readFileSync("./test.txt", { flag: "r" });
-  const [numbers, ...rest] = data.toString().split("\n\n");
+  const [values, ...r] = data.toString().split("\n\n");
 
-  const bingo = numbers.split(",");
-  const boards: Array<Position[][]> = [];
+  const numbers = values.split(",");
+  const boards: string[][][] = [];
+  const hits: boolean[][][] = [];
+  let sum: number = 0;
 
-  let rowHits: Hit = {};
-  let columnHits: Hit = {};
-
-  for (let k = 0; k < rest.length; k++) {
-    const value = rest[k];
-    let board: Position[][] = [];
-    const rows = value.split("\n").filter((item) => item.length);
-    rowHits[k] = {};
-    columnHits[k] = {};
-
+  for (let n = 0; n < r.length; n++) {
+    boards[n] = [];
+    hits[n] = [];
+    const rows = r[n].split("\n").filter((item) => item.length);
     for (let i = 0; i < rows.length; i++) {
-      let row: Position[] = [];
       const values = rows[i].split(" ").filter((item) => item !== "");
-      columnHits[k][i] = 0;
-
+      boards[n][i] = [];
+      hits[n][i] = [];
       for (let j = 0; j < values.length; j++) {
-        rowHits[k][j] = 0;
-        row.push({ key: values[j], drawn: false });
-      }
-
-      board.push(row);
-    }
-
-    boards.push(board);
-  }
-
-  const [winnerBoard, luckyNumber] = findBingo(
-    bingo,
-    boards,
-    rowHits,
-    columnHits
-  );
-
-  let unluckyNumbers: number = 0;
-  if (winnerBoard && luckyNumber !== "") {
-    for (let j = 0; j < winnerBoard.length; j++) {
-      for (let k = 0; k < winnerBoard[j].length; k++) {
-        if (!winnerBoard[j][k].drawn)
-          unluckyNumbers += Number(winnerBoard[j][k].key);
+        boards[n][i][j] = values[j];
+        hits[n][i][j] = false;
       }
     }
   }
 
-  console.log(Number(luckyNumber) * unluckyNumbers);
+  const [winnerBoard, luckyNumber, hitPos] = findWinner(numbers, boards, hits);
+
+  for (let j = 0; j < winnerBoard.length; j++) {
+    for (let k = 0; k < winnerBoard[j].length; k++) {
+      if (!hits[hitPos][j][k]) sum += Number(winnerBoard[j][k]);
+    }
+  }
+
+  console.log(sum * Number(luckyNumber));
 };
 
-const findBingo = (
-  bingo: string[],
-  boards: Array<Position[][]>,
-  rowHits: Hit,
-  columnHits: Hit
-): [Position[][], string] => {
-  for (let n = 0; n < bingo.length; n++) {
-    for (let f = 0; f < boards.length; f++) {
-      const board = boards[f];
-      for (let j = 0; j < board.length; j++) {
-        for (let k = 0; k < board[j].length; k++) {
-          if (board[j][k].key === bingo[n]) {
-            board[j][k].drawn = true;
-            rowHits[f][k] = (rowHits[f][k] || 0) + 1;
-            if (j === 0) columnHits[f][j] = (columnHits[f][j] || 0) + 1;
-          }
-          if (rowHits[f][k] === board[j].length) {
-            return [board, bingo[n]];
-          }
-        }
+const findWinner = (
+  numbers: Array<string>,
+  boards: string[][][],
+  hits: boolean[][][]
+): [string[][], string, number] => {
+  let wonLines = true;
+  let wonColumns = true;
 
-        if (columnHits[f][j] === board.length) {
-          return [board, bingo[n]];
+  for (let n = 0; n < numbers.length; n++) {
+    for (let i = 0; i < boards.length; i++) {
+      for (let j = 0; j < boards[i].length; j++) {
+        for (let k = 0; k < boards[i][j].length; k++) {
+          if (boards[i][j][k] === numbers[n]) hits[i][j][k] = true;
+        }
+      }
+
+      for (let j = 0; j < hits[i].length; j++) {
+        wonLines = true;
+        wonColumns = true;
+        for (let k = 0; k < hits[i][j].length; k++) {
+          if (!hits[i][j][k]) wonLines = false;
+          if (!hits[i][k][j]) wonColumns = false;
+        }
+        if (wonLines || wonColumns) {
+          return [boards[i], numbers[n], i];
         }
       }
     }
   }
 
-  return [[], ""];
+  return [[], "", 0];
 };
 
 main();
