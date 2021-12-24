@@ -20,8 +20,8 @@ const main = async () => {
     const distance = max(abs(h), abs(v));
 
     for (let i = 0; i <= distance; i++) {
-      const dx = min(x1, x2) + abs((h === 0 ? 0 : h > 0 ? 1 : -1) * i);
-      const dy = min(y1, y2) + abs((v === 0 ? 0 : v > 0 ? 1 : -1) * i);
+      const dx = x1 + (h === 0 ? 0 : h > 0 ? 1 : -1) * i;
+      const dy = y1 + (v === 0 ? 0 : v > 0 ? 1 : -1) * i;
 
       if (!coordinates[dx]) coordinates[dx] = [];
       coordinates[dx][dy] = (coordinates[dx][dy] || 0) + 1;
