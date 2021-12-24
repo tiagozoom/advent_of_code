@@ -21,11 +21,10 @@ const main = async () => {
       if (prevIndex < 0) {
         fishes[7] = (fishes[7] || 0) + fishes[j];
         fishes[9] = (fishes[9] || 0) + fishes[j];
-        fishes[j] = 0;
       } else {
         fishes[prevIndex] = (fishes[prevIndex] || 0) + fishes[j];
-        fishes[j] = 0;
       }
+      fishes[j] = 0;
     }
   }
 
