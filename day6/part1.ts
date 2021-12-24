@@ -20,6 +20,8 @@ const main = async () => {
     }
   }
 
+  console.log(fishes);
+
   console.log(fishes.length);
 };
 

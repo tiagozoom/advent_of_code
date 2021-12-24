@@ -4,38 +4,34 @@ import * as readline from "readline";
 const main = async () => {
   const stream = createReadStream("./test.txt");
   const lines = readline.createInterface(stream);
-  const { max, abs } = Math;
-  const coordinates: number[][] = [];
+  const fishes: number[] = [];
+  const days: number = 256;
 
   for await (let line of lines) {
-    const [start, end] = line.toString().split(" -> ");
-    const [x1, y1] = start.split(",").map((item) => Number(item));
-    const [x2, y2] = end.split(",").map((item) => Number(item));
-
-    const h = x2 - x1;
-    const v = y2 - y1;
-
-    const distance = max(abs(h), abs(v));
-
-    for (let i = 0; i <= distance; i++) {
-      const dx = x1 + (h === 0 ? 0 : h > 0 ? 1 : -1) * i;
-      const dy = y1 + (v === 0 ? 0 : v > 0 ? 1 : -1) * i;
-
-      if (!coordinates[dx]) coordinates[dx] = [];
-      coordinates[dx][dy] = (coordinates[dx][dy] || 0) + 1;
+    let values = line.split(",").map((item) => Number(item));
+    for (let value of values) {
+      fishes[value] = (fishes[value] || 0) + 1;
     }
   }
 
-  let sum = 0;
-  const array = coordinates.filter((item) => item);
-
-  for (let i = 0; i < array.length; i++) {
-    for (let j = 0; j < array[i].length; j++) {
-      if (array[i][j] >= 2) sum++;
+  for (let i = 0; i < days; i++) {
+    for (let j = 0; j < fishes.length; j++) {
+      if (!fishes[j]) continue;
+      const prevIndex = j - 1;
+      if (prevIndex < 0) {
+        fishes[7] = (fishes[7] || 0) + fishes[j];
+        fishes[9] = (fishes[9] || 0) + fishes[j];
+        fishes[j] = 0;
+      } else {
+        fishes[prevIndex] = (fishes[prevIndex] || 0) + fishes[j];
+        fishes[j] = 0;
+      }
     }
   }
 
-  console.log(sum);
+  console.log(
+    fishes.filter((item) => item).reduce((acc, item) => acc + item, 0)
+  );
 };
 
 main();
