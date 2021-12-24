@@ -1,43 +1,39 @@
-import { readFileSync } from "fs";
+import { createReadStream } from "fs";
+import * as readline from "readline";
 
 const main = async () => {
-  const data = readFileSync("./test.txt", { flag: "r" });
-  const diagram: number[][] = [];
-  const coordinates = data
-    .toString()
-    .split("\n")
-    .filter((item) => item !== "")
-    .map((item) => item.split(" -> "));
+  const stream = createReadStream("./test.txt");
+  const lines = readline.createInterface(stream);
+  const { max, min, abs } = Math;
+  const coordinates: number[][] = [];
 
-  for (let k = 0; k < coordinates.length; k++) {
-    const [[x1, y1], [x2, y2]] = coordinates[k].map((item) =>
-      item.split(",").map((item) => Number(item))
-    );
+  for await (let line of lines) {
+    const [start, end] = line.toString().split(" -> ");
+    const [x1, y1] = start.split(",").map((item) => Number(item));
+    const [x2, y2] = end.split(",").map((item) => Number(item));
 
-    if (x1 !== x2 && y1 !== y2) continue;
+    const h = x2 - x1;
+    const v = y2 - y1;
 
-    let start: number = 0;
-    let end: number = 0;
+    if (h !== 0 && v !== 0) continue;
 
-    if (y1 === y2) {
-      [start, end] = x1 < x2 ? [x1, x2] : [x2, x1];
-      for (let j = start; j <= end; j++) {
-        if (!diagram[j]) diagram[j] = [];
-        diagram[j][y1] = (diagram[j][y1] || 0) + 1;
-      }
-    } else {
-      [start, end] = y1 < y2 ? [y1, y2] : [y2, y1];
-      for (let j = start; j <= end; j++) {
-        if (!diagram[x1]) diagram[x1] = [];
-        diagram[x1][j] = (diagram[x1][j] || 0) + 1;
-      }
+    const distance = max(abs(h), abs(v));
+
+    for (let i = 0; i <= distance; i++) {
+      const dx = min(x1, x2) + abs((h === 0 ? 0 : h > 0 ? 1 : -1) * i);
+      const dy = min(y1, y2) + abs((v === 0 ? 0 : v > 0 ? 1 : -1) * i);
+
+      if (!coordinates[dx]) coordinates[dx] = [];
+      coordinates[dx][dy] = (coordinates[dx][dy] || 0) + 1;
     }
   }
 
   let sum = 0;
-  for (let i = 0; i < diagram.length; i++) {
-    for (let k = 0; k < diagram.length; k++) {
-      if (diagram[i] && diagram[i][k] && diagram[i][k] >= 2) sum++;
+  const array = coordinates.filter((item) => item);
+
+  for (let i = 0; i < array.length; i++) {
+    for (let j = 0; j < array[i].length; j++) {
+      if (array[i][j] >= 2) sum++;
     }
   }
 
