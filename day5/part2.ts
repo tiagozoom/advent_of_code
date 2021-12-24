@@ -1,86 +1,43 @@
-import { readFileSync } from "fs";
+import { createReadStream } from "fs";
+import * as readline from "readline";
 
 const main = async () => {
-  const data = readFileSync("./test.txt", { flag: "r" });
-  const [values, ...r] = data.toString().split("\n\n");
+  const stream = createReadStream("./test.txt");
+  const lines = readline.createInterface(stream);
+  const { max, abs } = Math;
+  const coordinates: number[][] = [];
 
-  const numbers = values.split(",");
-  const boards: string[][][] = [];
-  const hits: boolean[][][] = [];
-  let sum: number = 0;
+  for await (let line of lines) {
+    const [start, end] = line.toString().split(" -> ");
+    const [x1, y1] = start.split(",").map((item) => Number(item));
+    const [x2, y2] = end.split(",").map((item) => Number(item));
 
-  for (let n = 0; n < r.length; n++) {
-    boards[n] = [];
-    hits[n] = [];
-    const rows = r[n].split("\n").filter((item) => item.length);
-    for (let i = 0; i < rows.length; i++) {
-      const values = rows[i].split(" ").filter((item) => item !== "");
-      boards[n][i] = [];
-      hits[n][i] = [];
-      for (let j = 0; j < values.length; j++) {
-        boards[n][i][j] = values[j];
-        hits[n][i][j] = false;
-      }
+    const h = x2 - x1;
+    const v = y2 - y1;
+
+    const distance = max(abs(h), abs(v));
+
+    const [x, y] = h < v ? [x1, y1] : [x2, y2];
+
+    for (let i = 0; i <= distance; i++) {
+      const dx = x + abs((h === 0 ? 0 : h > 0 ? 1 : -1) * i);
+      const dy = y + abs((v === 0 ? 0 : v > 0 ? 1 : -1) * i);
+
+      if (!coordinates[dx]) coordinates[dx] = [];
+      coordinates[dx][dy] = (coordinates[dx][dy] || 0) + 1;
     }
   }
 
-  const [winnerBoard, luckyNumberPos, hitPos] = findWinner(
-    numbers,
-    boards,
-    hits
-  );
+  let sum = 0;
+  const array = coordinates.filter((item) => item);
 
-  for (let j = 0; j < winnerBoard.length; j++) {
-    for (let k = 0; k < winnerBoard[j].length; k++) {
-      if (!hits[hitPos][j][k]) sum += Number(winnerBoard[j][k]);
+  for (let i = 0; i < array.length; i++) {
+    for (let j = 0; j < array[i].length; j++) {
+      if (array[i][j] >= 2) sum++;
     }
   }
 
-  console.log(sum * Number(numbers[luckyNumberPos]));
-};
-
-const findWinner = (
-  numbers: Array<string>,
-  boards: string[][][],
-  hits: boolean[][][],
-  numPos: number = 0
-): [string[][], number, number] => {
-  let wonLines = true;
-  let wonColumns = true;
-
-  for (let n = numPos; n < numbers.length; n++) {
-    for (let i = 0; i < boards.length; i++) {
-      if (!boards[i]) {
-        continue;
-      }
-      for (let j = 0; j < boards[i].length; j++) {
-        for (let k = 0; k < boards[i][j].length; k++) {
-          if (boards[i][j][k] === numbers[n]) hits[i][j][k] = true;
-        }
-      }
-
-      for (let j = 0; j < hits[i].length; j++) {
-        wonLines = true;
-        wonColumns = true;
-        for (let k = 0; k < hits[i][j].length; k++) {
-          if (!hits[i][j][k]) wonLines = false;
-          if (!hits[i][k][j]) wonColumns = false;
-        }
-
-        if (wonLines || wonColumns) {
-          const boardsLeft = boards.filter((item) => item);
-          if (boardsLeft.length === 1) {
-            return [boards[i], n, i];
-          }
-
-          delete boards[i];
-          return findWinner(numbers, boards, hits, n);
-        }
-      }
-    }
-  }
-
-  return [[], 0, 0];
+  console.log(sum);
 };
 
 main();
