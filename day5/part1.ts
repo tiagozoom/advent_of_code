@@ -4,7 +4,7 @@ import * as readline from "readline";
 const main = async () => {
   const stream = createReadStream("./test.txt");
   const lines = readline.createInterface(stream);
-  const { max, min, abs } = Math;
+  const { max, abs } = Math;
   const coordinates: number[][] = [];
 
   for await (let line of lines) {
