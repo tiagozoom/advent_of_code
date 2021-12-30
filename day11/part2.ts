@@ -36,48 +36,58 @@ class Stack<T> implements IStack<T> {
 const main = async () => {
   const stream = createReadStream("./test.txt");
   const lines = readline.createInterface(stream);
-  const opens: { [key: string]: string } = {
-    "{": "}",
-    "[": "]",
-    "(": ")",
-    "<": ">",
-  };
-  let errorSum: number[] = [];
+  const numbers: number[][] = [];
+  //Up, Up/Right, Right, Right/Down, Down, Down/Left, Left, Left/Up
+  const xDirections = [-1, -1, 0, 1, 1, 1, 0, -1];
+  const yDirections = [0, 1, 1, 1, 0, -1, -1, -1];
 
+  let i = 0;
   for await (let line of lines) {
-    const stack = new Stack<string>();
-    const values = line.split("");
-    let errorFound = false;
-
-    for (let i = 0; i < values.length; i++) {
-      if (opens[values[i]]) stack.push(values[i]);
-      else {
-        const close = stack.pop()!;
-        if (close && values[i] !== opens[close]) {
-          errorFound = true;
-        }
-      }
-    }
-
-    if (!errorFound) {
-      let score = 0;
-      while (stack.size()) {
-        const value = stack.pop()!;
-        let completionValue = 0;
-        if (opens[value] === ")") completionValue = 1;
-        else if (opens[value] === "]") completionValue = 2;
-        else if (opens[value] === "}") completionValue = 3;
-        else if (opens[value] === ">") completionValue = 4;
-        score = score * 5 + completionValue;
-      }
-
-      errorSum.push(score);
-    }
+    const values = line.split("").map((item) => Number(item));
+    numbers[i] = values;
+    i++;
   }
 
-  const ordered = errorSum.sort((a, b) => (a > b ? 1 : -1));
-
-  console.log(ordered[Math.floor(ordered.length / 2)]);
+  for (let k = 0; ; k++) {
+    const stack = new Stack<[number, number]>();
+    const visited: boolean[][] = [];
+    let flashes = 0;
+    for (let i = 0; i < numbers.length; i++) {
+      if (visited[i] === undefined) visited[i] = [];
+      for (let j = 0; j < numbers[i].length; j++) {
+        if (visited[i][j]) continue;
+        else if (numbers[i][j] === 9) {
+          numbers[i][j] = 0;
+          stack.push([i, j]);
+          visited[i][j] = true;
+          flashes++;
+          while (stack.size()) {
+            const [x, y] = stack.pop()!;
+            for (let m = 0; m < xDirections.length; m++) {
+              const xd = x + xDirections[m];
+              const yd = y + yDirections[m];
+              const validx = xd >= 0 && xd < numbers.length;
+              const validy = yd >= 0 && yd < numbers[y].length;
+              if (validx && validy) {
+                if (visited[xd] === undefined) visited[xd] = [];
+                if (visited[xd][yd]) continue;
+                else if (numbers[xd][yd] === 9) {
+                  stack.push([xd, yd]);
+                  numbers[xd][yd] = 0;
+                  visited[xd][yd] = true;
+                  flashes++;
+                } else numbers[xd][yd] += 1;
+              }
+            }
+          }
+        } else numbers[i][j] += 1;
+      }
+    }
+    if (flashes === numbers.length * numbers[0].length) {
+      console.log(k + 1);
+      break;
+    }
+  }
 };
 
 main();
