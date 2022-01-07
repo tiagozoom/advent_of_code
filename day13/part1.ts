@@ -3,9 +3,8 @@ import { readFileSync } from "fs";
 const main = async () => {
   const file = readFileSync("./test.txt");
   const folds: { [key: string]: number }[] = [];
-  const vulcanos: boolean[][] = [];
-  const { abs } = Math;
-  let result: number = 0;
+  let vulcanos: boolean[][] = [];
+  let sum: number = 0;
 
   const [coordinatesLine, foldsLine] = file.toString().split("\n\n");
 
@@ -43,26 +42,39 @@ const main = async () => {
   }
 
   for (let i = 0; i < 1; i++) {
+    let result: boolean[][] = [];
     const [axis, n] = Object.entries(folds[i])[0];
     if (axis === "y") {
-      for (let j = 0; j < vulcanos.length - 1 - n; j++) {
+      for (let j = 0; j < n; j++) {
+        if (!result[j]) result[j] = [];
         for (let k = 0; k < vulcanos[j].length; k++) {
-          const x = abs(j - (vulcanos.length - 1));
-          if (vulcanos[j][k] || vulcanos[x][k]) result++;
+          const x = n * 2 - j;
+          const a = x <= vulcanos.length - 1 ? vulcanos[x][k] : vulcanos[j][k];
+          result[j][k] = vulcanos[j][k] || a;
         }
       }
     }
     if (axis === "x") {
       for (let j = 0; j < vulcanos.length; j++) {
-        for (let k = 0; k < vulcanos[j].length - 1 - n; k++) {
-          const y = abs(k - (vulcanos[j].length - 1));
-          if (vulcanos[j][k] || vulcanos[j][y]) result++;
+        if (!result[j]) result[j] = [];
+        for (let k = 0; k < n; k++) {
+          const y = n * 2 - k;
+          const a =
+            y <= vulcanos[j].length - 1 ? vulcanos[j][y] : vulcanos[j][k];
+          result[j][k] = vulcanos[j][k] || a;
         }
       }
     }
+    vulcanos = result;
   }
 
-  console.log(result);
+  for (let i = 0; i < vulcanos.length; i++) {
+    for (let j = 0; j < vulcanos[i].length; j++) {
+      if (vulcanos[i][j]) sum++;
+    }
+  }
+
+  console.log(sum);
 };
 
 main();

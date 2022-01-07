@@ -1,88 +1,79 @@
-import { createReadStream } from "fs";
-import * as readline from "readline";
-
-type Graph = { [key: string]: string[] };
-type Visited = { [key: string]: boolean };
-type Twice = { [key: string]: number };
-
-interface IStack<T> {
-  push(item: T): void;
-  pop(): T | undefined;
-  peek(): T | undefined;
-  size(): number;
-}
-
-class Stack<T> implements IStack<T> {
-  private storage: T[] = [];
-
-  constructor(private capacity: number = Infinity) {}
-
-  push(item: T): void {
-    if (this.size() === this.capacity) {
-      throw Error("Stack has reached max capacity, you cannot add more items");
-    }
-    this.storage.push(item);
-  }
-
-  pop(): T | undefined {
-    return this.storage.pop();
-  }
-
-  peek(): T | undefined {
-    return this.storage[this.size() - 1];
-  }
-
-  size(): number {
-    return this.storage.length;
-  }
-}
+import { readFileSync } from "fs";
 
 const main = async () => {
-  const stream = createReadStream("./test.txt");
-  const lines = readline.createInterface(stream);
-  const graph: Graph = {};
+  const file = readFileSync("./test.txt");
+  const folds: { [key: string]: number }[] = [];
+  let vulcanos: boolean[][] = [];
 
-  for await (let line of lines) {
-    const [a, b] = line.split("-");
-    if (!graph[a]) graph[a] = [];
-    if (!graph[b]) graph[b] = [];
-    graph[a].push(b);
-    graph[b].push(a);
-  }
+  const [coordinatesLine, foldsLine] = file.toString().split("\n\n");
 
-  const stack = new Stack<[string, Visited, Twice, boolean]>();
-  let numPaths = 0;
+  const coordinates = coordinatesLine
+    .split("\n")
+    .map((item) => item.split(",").map((item) => Number(item)));
 
-  for (let [key] of Object.entries(graph)) {
-    if (key !== "start") continue;
-    stack.push([key, { [key]: true }, {}, false]);
-    while (stack.size()) {
-      let [vertex, visited, t, twice] = stack.pop()!;
-      if (vertex === "end") {
-        numPaths++;
-        continue;
-      }
+  const [columns, rows] = coordinates.reduce(
+    (acc, [x, y]) => {
+      if (x > acc[0]) acc[0] = x;
+      if (y > acc[1]) acc[1] = y;
+      return acc;
+    },
+    [0, 0]
+  );
 
-      if (vertex !== vertex.toUpperCase() && vertex !== "start") {
-        t[vertex] = (t[vertex] || 0) + 1;
-        twice = !!Object.values(t).find((value) => value >= 2);
-        if (twice) {
-          for (let v of Object.keys(t)) {
-            visited[v] = true;
-          }
-        }
-      }
-
-      const vertices = graph[vertex];
-
-      for (let value of vertices) {
-        if (visited[value] === true) continue;
-        stack.push([value, { ...visited }, { ...t }, twice]);
-      }
+  for (let i = 0; i < rows + 1; i++) {
+    if (!vulcanos[i]) vulcanos[i] = [];
+    for (let j = 0; j < columns + 1; j++) {
+      vulcanos[i][j] = false;
     }
   }
 
-  console.log(numPaths);
+  for (let i = 0; i < coordinates.length; i++) {
+    const [y, x] = coordinates[i];
+    if (!vulcanos[x]) vulcanos[x] = [];
+    vulcanos[x][y] = true;
+  }
+
+  const f = foldsLine.split("\n").filter((item) => item);
+  for (let i = 0; i < f.length; i++) {
+    const [, , nFolds] = f[i].split(" ");
+    const [axis, n] = nFolds.split("=");
+    folds.push({ [axis]: Number(n) });
+  }
+
+  for (let i = 0; i < folds.length; i++) {
+    let result: boolean[][] = [];
+    const [axis, n] = Object.entries(folds[i])[0];
+    if (axis === "y") {
+      for (let j = 0; j < n; j++) {
+        if (!result[j]) result[j] = [];
+        for (let k = 0; k < vulcanos[j].length; k++) {
+          const x = n * 2 - j;
+          const a = x <= vulcanos.length - 1 ? vulcanos[x][k] : vulcanos[j][k];
+          result[j][k] = vulcanos[j][k] || a;
+        }
+      }
+    }
+    if (axis === "x") {
+      for (let j = 0; j < vulcanos.length; j++) {
+        if (!result[j]) result[j] = [];
+        for (let k = 0; k < n; k++) {
+          const y = n * 2 - k;
+          const a =
+            y <= vulcanos[j].length - 1 ? vulcanos[j][y] : vulcanos[j][k];
+          result[j][k] = vulcanos[j][k] || a;
+        }
+      }
+    }
+    vulcanos = result;
+  }
+
+  for (let i = 0; i < vulcanos.length; i++) {
+    for (let j = 0; j < vulcanos[i].length; j++) {
+      if (vulcanos[i][j]) process.stdout.write("x");
+      else process.stdout.write(" ");
+    }
+    process.stdout.write("\n");
+  }
 };
 
 main();
